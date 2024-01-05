@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 
@@ -20,12 +22,14 @@ public class batch {
     @Scheduled(cron = "0 40 5 * * *") // 매일 05:40에 실행하는 cron 표현식
 //    @Scheduled(cron = "*/10 * * * * *")
     public void performTask() {
-        System.out.println("작업 실행 시간: " + new Date());
-        List<CsvDTO> csvDTOList = restaurantMapper.select_restaurant();
-        create_file(csvDTOList);
+        create_file();
     }
-    public void create_file(List<CsvDTO> dataList){
-        String filePath = "csv_demo.csv";
+    public void create_file(){
+        System.out.println("작업 실행 시간: " + DateTimeFormatter.ofPattern("yyyyMMdd_HHmm").format(LocalDateTime.now()));
+        List<CsvDTO> csvDTOList = restaurantMapper.select_restaurant();
+
+        if(csvDTOList.isEmpty())return;
+        String filePath = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm").format(LocalDateTime.now())+"_통계.csv";
 
         File file = null;
         BufferedWriter bw = null;
@@ -38,7 +42,7 @@ public class batch {
             bw.write("시/군/구,총조회수");
             bw.write(NEWLINE);
 
-            for (CsvDTO csvDTO : dataList){
+            for (CsvDTO csvDTO : csvDTOList){
                 System.out.println(csvDTO);
                 bw.write(csvDTO.getGnn()+","+csvDTO.getAllViewCount());
                 bw.write("\n");
@@ -48,6 +52,7 @@ public class batch {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        restaurantMapper.truncate_restaurant();
     }
 
 }
